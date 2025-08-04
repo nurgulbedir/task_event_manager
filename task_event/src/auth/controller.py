@@ -17,9 +17,10 @@ router = APIRouter()
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    print("çıkmadan önce")
     db_user = auth_service.create_user(db=db, user=user)
     print("calıştı")
-    return {"message": f"User {db_user.email} registered successfully."}
+    return {"message": f"User registered successfully."}
 
 
 # src/auth/controller.py - YENİ DEBUG KODU
