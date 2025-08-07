@@ -3,34 +3,47 @@
 import logging
 import sys
 
-# 1. Log formatımızı belirliyoruz.
-# [Zaman] - [Log Seviyesi] - [Modül Adı] - [Mesaj]
-log_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-date_format = "%Y-%m-%d %H:%M:%S"
 
-# 2. Temel yapılandırmayı yapıyoruz.
-logging.basicConfig(
-    level=logging.DEBUG,  # Geliştirme aşamasında en düşük seviyeyi seçelim ki her şeyi görelim.
-    format=log_format,
-    datefmt=date_format,
-    # Logları hem dosyaya hem de konsola yazdırmak için handler'ları burada belirtmiyoruz.
-    # Onları aşağıda manuel olarak ekleyeceğiz.
-    stream=sys.stdout, # Varsayılan olarak logları konsola (standart çıktı) yaz.
-)
+def setup_logging():
+    """
+    Tüm loglama altyapısını kuran merkezi fonksiyon.
+    Bu fonksiyon main.py'dan uygulama başlarken çağrılacak.
+    """
+    # 1. Log formatlarımızı tanımlıyoruz.
+    log_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(log_format, datefmt=date_format)
 
-# 3. İsteğe bağlı olarak, logları bir dosyaya da yazmak için bir FileHandler oluşturabiliriz.
-#    Bu, özellikle production ortamı için çok önemlidir.
-file_handler = logging.FileHandler("app.log")
-file_handler.setLevel(logging.WARNING) # Dosyaya sadece WARNING ve üzeri seviyedeki hataları yaz.
-file_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
+    # 2. Ana (root) logger'ı alıyoruz.
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # Ana filtre her şeyi yakalasın.
 
-# 4. Ana (root) logger'ı alıp ona file_handler'ı ekleyebiliriz.
-# logging.getLogger().addHandler(file_handler) # Şimdilik bu satırı yorumda bırakalım, önce konsolda görelim.
+    # Önceki tüm handler'ları temizleyerek sıfırdan başlıyoruz.
+    if root_logger.hasHandlers():
+        root_logger.handlers.clear()
+
+    # 3. Konsol için Handler (Seviye: INFO)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)  # Konsolda sadece INFO ve üzerini göster.
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # 4. Dosya için Handler (Seviye: WARNING)
+    file_handler = logging.FileHandler("app.log", mode='a')
+    file_handler.setLevel(logging.WARNING)  # Dosyaya sadece WARNING ve üzerini yaz.
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+
+    # 5. "Gürültücü" kütüphaneleri susturuyoruz.
+    logging.getLogger("pymongo").setLevel(logging.WARNING)
+    logging.getLogger("motor").setLevel(logging.WARNING)
+    logging.getLogger("passlib").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)  # Uvicorn'un trafik loglarını da susturalım.
+
+    # Bu mesaj, yapılandırmanın çalıştığını bize gösterecek.
+    logging.getLogger(__name__).info("Loglama sistemi başarıyla kuruldu.")
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Belirtilen isimle bir logger nesnesi döndürür.
-    Bu fonksiyonu, projenin diğer dosyalarından logger'ı almak için kullanacağız.
-    """
+    """Belirtilen isimle bir logger nesnesi döndürür."""
     return logging.getLogger(name)

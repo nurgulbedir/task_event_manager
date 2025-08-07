@@ -44,13 +44,14 @@ class CommentCreate(BaseModel):
     attachments: Optional[List[str]] = None
 
 
-# MongoDB'den API'ye yanıt olarak döndürülecek tam yorum modeli
 class CommentResponse(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     event_id: int
     comment_text: str
+
     emoji: Optional[str] = None
     attachments: Optional[List[str]] = None
+
     author_id: int
     author_email: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -59,8 +60,6 @@ class CommentResponse(BaseModel):
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
-
-
 
 from datetime import datetime
 from . import models as comment_models
